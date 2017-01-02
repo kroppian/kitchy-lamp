@@ -16,14 +16,14 @@
 #define ON 1
 #define OFF 0
 
-#define FREQ 20000000
+#define FREQ 1000000
 
 void check_mat(void);
 void check_timeout(void);
 
 int light;
-
-int timeout;
+int timeout_in_secs;
+int counter;
 
 int main()
 {
@@ -43,6 +43,7 @@ int main()
   /* Set up timing*/
   sei();
 
+  // prescaler of 8
   TCCR2B |= 1 << CS11 | 1<<WGM12;
   TCCR2B &=  ~(1 << CS10);
   // timer interupt mask
@@ -52,7 +53,9 @@ int main()
 
   /* Setting up state */
   light = 0;
-  timeout = 1;
+  timeout_in_secs = 10;
+
+  counter = 0; 
 
   while(1)
   {
@@ -61,6 +64,23 @@ int main()
 
 }
 
+
+void check_mat(void){
+
+  if(bit_is_clear(PINB, FLOOR_SWITCH)){
+    light = ON; 
+  }  
+
+}
+
+void check_timeout(){
+
+  if(counter >= ((((timeout_in_secs * FREQ) / 8) / 200))){
+    light = OFF; 
+    counter = 0;
+  }    
+
+}
 
 ISR(TIMER2_COMPA_vect){
 
@@ -71,26 +91,17 @@ ISR(TIMER2_COMPA_vect){
     if(light) check_timeout();
   // }
 
-}
-
-void check_mat(void){
-
-  if(bit_is_clear(PINB, FLOOR_SWITCH)){
-    light = ON; 
-  }else{
-    light = OFF; 
-  }
- 
-
   if(light){
-
     PORTD |= (1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4) | (1 << LED4) | (1 << LED5);
-
   } else {
-  
     PORTD &= ~((1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4) | (1 << LED4)  | (1 << LED5));
-
+  }
+  
+  counter++;
+  if(counter >= ((((timeout_in_secs * FREQ) / 8) / 200))){
+    counter = ((((timeout_in_secs * FREQ) / 8) / 200));
   }
 
 }
+
 
