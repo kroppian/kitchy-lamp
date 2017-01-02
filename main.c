@@ -53,7 +53,7 @@ int main()
 
   /* Setting up state */
   light = 0;
-  timeout_in_secs = 10;
+  timeout_in_secs = 3;
 
   counter = 0; 
 
@@ -77,7 +77,6 @@ void check_timeout(){
 
   if(counter >= ((((timeout_in_secs * FREQ) / 8) / 200))){
     light = OFF; 
-    counter = 0;
   }    
 
 }
@@ -93,14 +92,17 @@ ISR(TIMER2_COMPA_vect){
 
   if(light){
     PORTD |= (1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4) | (1 << LED4) | (1 << LED5);
+
+    counter++;
+    if(counter >= ((((timeout_in_secs * FREQ) / 8) / 200))){
+      counter = ((((timeout_in_secs * FREQ) / 8) / 200));
+    }
+
   } else {
     PORTD &= ~((1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4) | (1 << LED4)  | (1 << LED5));
+    counter = 0;
   }
   
-  counter++;
-  if(counter >= ((((timeout_in_secs * FREQ) / 8) / 200))){
-    counter = ((((timeout_in_secs * FREQ) / 8) / 200));
-  }
 
 }
 
