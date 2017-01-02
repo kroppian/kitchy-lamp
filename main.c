@@ -1,5 +1,4 @@
 #include <avr/io.h>
-#include <util/delay.h>
 #include <time.h>
 #include <avr/interrupt.h>  
 
@@ -16,7 +15,7 @@
 #define ON 1
 #define OFF 0
 
-#define FREQ 1000000
+#define FREQ 500000
 
 void check_mat(void);
 void check_timeout(void);
@@ -46,6 +45,7 @@ int main()
   // prescaler of 8
   TCCR2B |= 1 << CS11 | 1<<WGM12;
   TCCR2B &=  ~(1 << CS10);
+  TCCR2B &=  ~(1 << CS12);
   // timer interupt mask
   TIMSK2 |= 1<< OCIE1A;
 
@@ -69,13 +69,14 @@ void check_mat(void){
 
   if(bit_is_clear(PINB, FLOOR_SWITCH)){
     light = ON; 
+    counter = 0;
   }  
 
 }
 
 void check_timeout(){
 
-  if(counter >= ((((timeout_in_secs * FREQ) / 8) / 200))){
+  if(! bit_is_clear(PINB, FLOOR_SWITCH) && counter >= ((((timeout_in_secs * FREQ) / 8) / OCR2A))){
     light = OFF; 
   }    
 
@@ -94,8 +95,8 @@ ISR(TIMER2_COMPA_vect){
     PORTD |= (1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4) | (1 << LED4) | (1 << LED5);
 
     counter++;
-    if(counter >= ((((timeout_in_secs * FREQ) / 8) / 200))){
-      counter = ((((timeout_in_secs * FREQ) / 8) / 200));
+    if(counter >= ((((timeout_in_secs * FREQ) / 8) / OCR2A))){
+      counter = ((((timeout_in_secs * FREQ) / 8) / OCR2A));
     }
 
   } else {
