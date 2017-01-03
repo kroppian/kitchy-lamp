@@ -2,24 +2,25 @@
 #include <time.h>
 #include <avr/interrupt.h>  
 
+/* IO macros */
 #define LED1 PIND0
 #define LED2 PIND1
 #define LED3 PIND2
 #define LED4 PIND3
 #define LED5 PIND4
-
 #define FLOOR_SWITCH PINB0
 
-#define PAUSE_FACTOR 1
 
-#define ON 1
-#define OFF 0
-
+/* Timing */
 #define RAW_TIMEOUT ((((timeout_in_secs * FREQ) / 8) / OCR2A))
-
 // TODO this seems wrong
 #define FREQ 500000
 
+/* Helpful */ 
+#define ON 1
+#define OFF 0
+
+/* Functions */
 void check_mat(void);
 void check_timeout(void);
 
@@ -46,9 +47,13 @@ int main()
   sei();
 
   // prescaler of 8
-  TCCR2B |= 1 << CS11 | 1<<WGM12;
+  TCCR2B |= 1 << CS11;
   TCCR2B &=  ~(1 << CS10);
   TCCR2B &=  ~(1 << CS12);
+
+  // CTC mode
+  TCCR2B |= 1<<WGM12;
+
   // timer interupt mask
   TIMSK2 |= 1<< OCIE1A;
 
@@ -57,9 +62,9 @@ int main()
   /* Setting up state */
   light = 0;
   timeout_in_secs = 3;
-
   counter = 0; 
 
+  /* Time to chase tails */ 
   while(1)
   {
 
@@ -67,8 +72,8 @@ int main()
 
 }
 
-
-void check_mat(void){
+void check_mat(void)
+{
 
   if(bit_is_clear(PINB, FLOOR_SWITCH)){
     light = ON; 
@@ -77,7 +82,8 @@ void check_mat(void){
 
 }
 
-void check_timeout(){
+void check_timeout()
+{
 
   if(! bit_is_clear(PINB, FLOOR_SWITCH) && counter >= RAW_TIMEOUT){
     light = OFF; 
@@ -85,9 +91,12 @@ void check_timeout(){
 
 }
 
-ISR(TIMER2_COMPA_vect){
+ISR(TIMER2_COMPA_vect)
+{
 
-  // if(prog_mode){
+  // if(manual_mode){
+  //    light = ON;
+  // } else if(prog_mode){
     // timer_set;
   // }else{
     check_mat();
@@ -97,9 +106,8 @@ ISR(TIMER2_COMPA_vect){
   if(light){
     PORTD |= (1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4) | (1 << LED4) | (1 << LED5);
 
-    counter++;
-    if(counter >= RAW_TIMEOUT){
-      counter = RAW_TIMEOUT;
+    if(counter < RAW_TIMEOUT){
+      counter++;
     }
 
   } else {
