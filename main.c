@@ -15,6 +15,9 @@
 #define ON 1
 #define OFF 0
 
+#define RAW_TIMEOUT ((((timeout_in_secs * FREQ) / 8) / OCR2A))
+
+// TODO this seems wrong
 #define FREQ 500000
 
 void check_mat(void);
@@ -76,7 +79,7 @@ void check_mat(void){
 
 void check_timeout(){
 
-  if(! bit_is_clear(PINB, FLOOR_SWITCH) && counter >= ((((timeout_in_secs * FREQ) / 8) / OCR2A))){
+  if(! bit_is_clear(PINB, FLOOR_SWITCH) && counter >= RAW_TIMEOUT){
     light = OFF; 
   }    
 
@@ -95,8 +98,8 @@ ISR(TIMER2_COMPA_vect){
     PORTD |= (1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4) | (1 << LED4) | (1 << LED5);
 
     counter++;
-    if(counter >= ((((timeout_in_secs * FREQ) / 8) / OCR2A))){
-      counter = ((((timeout_in_secs * FREQ) / 8) / OCR2A));
+    if(counter >= RAW_TIMEOUT){
+      counter = RAW_TIMEOUT;
     }
 
   } else {
