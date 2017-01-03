@@ -8,7 +8,13 @@
 #define LED3 PIND2
 #define LED4 PIND3
 #define LED5 PIND4
+
 #define FLOOR_SWITCH PINB0
+#define ROT_A PINB1
+#define ROT_B PINB2
+#define ROT_BTN PINB3
+
+#define MANUAL_SWITCH PINB4
 
 
 /* Timing */
@@ -27,6 +33,7 @@ void check_timeout(void);
 int light;
 int timeout_in_secs;
 int counter;
+int manual_mode;
 
 int main()
 {
@@ -43,6 +50,11 @@ int main()
   DDRB &= ~(1 << FLOOR_SWITCH);
   PORTB |= (1 << FLOOR_SWITCH);
 
+  // turning the manual switch to input
+  DDRB &= ~(1 << MANUAL_SWITCH);
+  PORTB |= (1 << MANUAL_SWITCH);
+    
+  
   /* Set up timing*/
   sei();
 
@@ -63,6 +75,8 @@ int main()
   light = 0;
   timeout_in_secs = 3;
   counter = 0; 
+  manual_mode = bit_is_clear(PINB, MANUAL_SWITCH);
+
 
   /* Time to chase tails */ 
   while(1)
@@ -94,22 +108,28 @@ void check_timeout()
 ISR(TIMER2_COMPA_vect)
 {
 
-  // if(manual_mode){
-  //    light = ON;
+  if(bit_is_clear(PINB, MANUAL_SWITCH)){
+    light = ON;
+    counter = 0;
+    manual_mode = ON;
   // } else if(prog_mode){
     // timer_set;
   // }else{
+  }else{
+    // make sure to turn the light off if it's no longer on
+    if(manual_mode){
+      manual_mode = OFF;
+      light = OFF;
+    }
     check_mat();
     if(light) check_timeout();
-  // }
+  }
 
   if(light){
     PORTD |= (1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4) | (1 << LED4) | (1 << LED5);
-
     if(counter < RAW_TIMEOUT){
       counter++;
     }
-
   } else {
     PORTD &= ~((1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4) | (1 << LED4)  | (1 << LED5));
     counter = 0;
