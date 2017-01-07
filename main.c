@@ -40,7 +40,10 @@ int manual_mode;
 int main()
 {
 
-  /* Setting up IO */
+  /* ##################
+   * # Setting up IO 
+   * ################## */
+
   // turning on the output leds
   DDRD |= 1 << LED1;
   DDRD |= 1 << LED2;
@@ -59,7 +62,9 @@ int main()
   // turning the dimmer pwm output on 
   DDRB |= 1 << DIMMER;
 
-  /* Setting up PWM */
+  /* ##################
+   * # Setting up PWM 
+   * ################## */
 
   // Initialize
   TCCR1A |= (1 << WGM11) | (1 << COM1A1) | (1<<COM1A0);
@@ -71,7 +76,9 @@ int main()
 
   OCR1A = ICR1 - offset;
 
-  /* Set up timing*/
+  /* ##################
+   * # Set up timing 
+   * ################## */
   sei();
 
   // prescaler of 8
@@ -87,17 +94,23 @@ int main()
 
   OCR2A = 100;
 
-  /* Setting up state */
+  /* ##################
+   * # Setting up state   
+   * ################## */
+  
   light = 0;
   timeout_in_secs = 3;
   counter = 0; 
   manual_mode = bit_is_clear(PINB, MANUAL_SWITCH);
 
-  /* Setting rotary encoder */
+  /* ##################
+   * # Setting rotary encoder   
+   * ################## */
+  initialize_rot(PINSETB, ROT_A, PINSETB, ROT_B);
 
-  initialize_rot(PINSETB, ROT_A,PINSETB, ROT_B);
-
-  /* Time to chase tails */ 
+  /* ##################
+   * # Time to chase tails   
+   * ################## */
   while(1)
   {
 
