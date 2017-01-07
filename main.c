@@ -10,6 +10,8 @@
 #define LED4 PIND3
 #define LED5 PIND4
 
+#define LEDPORT PORTD
+
 #define FLOOR_SWITCH PINB0
 #define ROT_A PINB3
 #define ROT_B PINB4
@@ -36,12 +38,16 @@ void check_mat(void);
 void check_timeout(void);
 void update_dimmer(void);
 
+// TODO Big question, how much the PWM randomly stops? And does it go back to main? 
+
 int light;
-int timeout_in_secs;
+int timeout_in_secs = 3;
 int counter;
 int manual_mode;
 int is_rot; 
-int offset;
+int offset = 500;
+int prog_mode;
+
 
 int main()
 {
@@ -79,8 +85,6 @@ int main()
   TCCR1B |= (1 << WGM12) | (1 << WGM13) | (1 << CS10 );
   ICR1 =  19999;
 
-  offset = 10000;
-
   OCR1A = ICR1 - offset;
 
   /* ##################
@@ -105,9 +109,10 @@ int main()
    * # Setting up state   
    * ################## */
   light = 0;
-  timeout_in_secs = 3;
+  //timeout_in_secs = 3;
   counter = 0; 
   manual_mode = bit_is_clear(PINB, MANUAL_SWITCH);
+  prog_mode = 0;
 
   /* ##################
    * # Setting rotary encoder   
@@ -167,19 +172,69 @@ void update_dimmer(void)
 
 }
 
+void display_time(unsigned short val){
+
+
+  switch (val){
+    case 1: 
+      PORTD = (1 << LED1);
+      break;
+    case 2:
+      PORTD = (1 << LED1) | (1 << LED2); 
+      break;
+    case 3:
+      PORTD = (1 << LED1) | (1 << LED2) | (1 << LED3); 
+      break;
+    case 4:
+      PORTD = (1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4);
+      break;
+    case 5:
+      PORTD = (1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4) | (1 << LED5);
+      break;
+    default:
+      PORTD = 0;
+  }
+
+}
+
+void update_timer(void){
+
+  if(! is_rot && rot_rotating() == RIGHT){
+    if(timeout_in_secs < 5) timeout_in_secs ++;
+    is_rot = 1;
+  }else if (! is_rot && rot_rotating() == LEFT){
+    if(timeout_in_secs > 1) timeout_in_secs --;
+    is_rot = 1;
+  }else if(rot_rotating() == NO_ROT){
+    is_rot = 0; 
+  }
+  display_time(timeout_in_secs);
+
+}
+
 ISR(TIMER2_COMPA_vect)
 {
 
   rot_poll();
-  update_dimmer();
 
+  // check if we're in timer program mode
+  // TODO work on debouncing
+  if(bit_is_clear(PINB, ROT_BTN) && prog_mode){
+    prog_mode = 0; 
+  }else if(bit_is_clear(PINB, ROT_BTN) && ! prog_mode){
+    prog_mode = 1; 
+  }
+
+  // Manual mode
   if(bit_is_clear(PINB, MANUAL_SWITCH)){
     light = ON;
     counter = 0;
     manual_mode = ON;
-  // } else if(prog_mode){
-    // timer_set;
-  // }else{
+    update_dimmer();
+  // timer program mode
+  } else if(prog_mode){
+    update_timer();
+    return;
   }else{
     // make sure to turn the light off if it's no longer on
     if(manual_mode){
@@ -188,6 +243,7 @@ ISR(TIMER2_COMPA_vect)
     }
     check_mat();
     if(light) check_timeout();
+    update_dimmer();
   }
 
   if(light){
