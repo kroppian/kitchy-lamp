@@ -29,7 +29,7 @@
 #define OFF 0
 
 /* dimmer */ 
-#define DIMMER_RESOLUTION 100
+#define DIMMER_RESOLUTION 500
 
 /* Functions */
 void check_mat(void);
@@ -50,6 +50,10 @@ int main()
    * # Setting up IO 
    * ################## */
 
+  // turning the dimmer pwm output on 
+  DDRB |= 1 << DIMMER;
+  PORTB |= ~(1 << DIMMER);
+
   // turning on the output leds
   DDRD |= 1 << LED1;
   DDRD |= 1 << LED2;
@@ -65,8 +69,6 @@ int main()
   DDRB &= ~(1 << MANUAL_SWITCH);
   PORTB |= (1 << MANUAL_SWITCH);
 
-  // turning the dimmer pwm output on 
-  DDRB |= 1 << DIMMER;
 
   /* ##################
    * # Setting up PWM/dimming
@@ -77,7 +79,7 @@ int main()
   TCCR1B |= (1 << WGM12) | (1 << WGM13) | (1 << CS10 );
   ICR1 =  19999;
 
-  offset = DIMMER_RESOLUTION;
+  offset = 10000;
 
   OCR1A = ICR1 - offset;
 
@@ -161,7 +163,7 @@ void update_dimmer(void)
     offset = 18000;
   }
 
-  OCR1A = ICR1 - offset;
+  if (light) OCR1A = ICR1 - offset;
 
 }
 
@@ -169,6 +171,7 @@ ISR(TIMER2_COMPA_vect)
 {
 
   rot_poll();
+  update_dimmer();
 
   if(bit_is_clear(PINB, MANUAL_SWITCH)){
     light = ON;
@@ -192,7 +195,6 @@ ISR(TIMER2_COMPA_vect)
     if(counter < RAW_TIMEOUT){
       counter++;
     }
-    update_dimmer();
   } else {
     PORTD &= ~((1 << LED1) | (1 << LED2) | (1 << LED3) | (1 << LED4) | (1 << LED4)  | (1 << LED5));
     counter = 0;
