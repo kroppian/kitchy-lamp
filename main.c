@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include <time.h>
 #include <avr/interrupt.h>  
+#include "librot.h"
 
 /* IO macros */
 #define LED1 PIND0
@@ -10,12 +11,13 @@
 #define LED5 PIND4
 
 #define FLOOR_SWITCH PINB0
-#define ROT_A PINB1
-#define ROT_B PINB2
-#define ROT_BTN PINB3
+#define ROT_A PINB3
+#define ROT_B PINB4
+#define ROT_BTN PINB5
 
-#define MANUAL_SWITCH PINB4
+#define MANUAL_SWITCH PINB2
 
+#define DIMMER PINB1
 
 /* Timing */
 #define RAW_TIMEOUT ((((timeout_in_secs * FREQ) / 8) / OCR2A))
@@ -26,19 +28,32 @@
 #define ON 1
 #define OFF 0
 
+/* dimmer */ 
+#define DIMMER_RESOLUTION 500
+
 /* Functions */
 void check_mat(void);
 void check_timeout(void);
+void update_dimmer(void);
 
 int light;
 int timeout_in_secs;
 int counter;
 int manual_mode;
+int is_rot; 
+int offset;
 
 int main()
 {
 
-  /* Setting up IO */
+  /* ##################
+   * # Setting up IO 
+   * ################## */
+
+  // turning the dimmer pwm output on 
+  DDRB |= 1 << DIMMER;
+  PORTB |= ~(1 << DIMMER);
+
   // turning on the output leds
   DDRD |= 1 << LED1;
   DDRD |= 1 << LED2;
@@ -53,9 +68,24 @@ int main()
   // turning the manual switch to input
   DDRB &= ~(1 << MANUAL_SWITCH);
   PORTB |= (1 << MANUAL_SWITCH);
-    
-  
-  /* Set up timing*/
+
+
+  /* ##################
+   * # Setting up PWM/dimming
+   * ################## */
+
+  // Initialize
+  TCCR1A |= (1 << WGM11) | (1 << COM1A1) | (1<<COM1A0);
+  TCCR1B |= (1 << WGM12) | (1 << WGM13) | (1 << CS10 );
+  ICR1 =  19999;
+
+  offset = 10000;
+
+  OCR1A = ICR1 - offset;
+
+  /* ##################
+   * # Set up timing 
+   * ################## */
   sei();
 
   // prescaler of 8
@@ -71,14 +101,23 @@ int main()
 
   OCR2A = 100;
 
-  /* Setting up state */
+  /* ##################
+   * # Setting up state   
+   * ################## */
   light = 0;
   timeout_in_secs = 3;
   counter = 0; 
   manual_mode = bit_is_clear(PINB, MANUAL_SWITCH);
 
+  /* ##################
+   * # Setting rotary encoder   
+   * ################## */
+  initialize_rot(PINSETB, ROT_A, PINSETB, ROT_B);
+  is_rot = 0;
 
-  /* Time to chase tails */ 
+  /* ##################
+   * # Time to chase tails   
+   * ################## */
   while(1)
   {
 
@@ -96,7 +135,7 @@ void check_mat(void)
 
 }
 
-void check_timeout()
+void check_timeout(void)
 {
 
   if(! bit_is_clear(PINB, FLOOR_SWITCH) && counter >= RAW_TIMEOUT){
@@ -105,8 +144,34 @@ void check_timeout()
 
 }
 
+void update_dimmer(void)
+{
+
+  if(! is_rot && rot_rotating() == RIGHT){
+    offset += DIMMER_RESOLUTION;
+    is_rot = 1;
+  }else if (! is_rot && rot_rotating() == LEFT){
+    offset -= DIMMER_RESOLUTION;
+    is_rot = 1;
+  }else if(rot_rotating() == NO_ROT){
+    is_rot = 0; 
+  }
+
+  if(offset < 0){
+    offset = 0; 
+  }else if(offset > 19999){
+    offset = 18000;
+  }
+
+  if (light) OCR1A = ICR1 - offset;
+
+}
+
 ISR(TIMER2_COMPA_vect)
 {
+
+  rot_poll();
+  update_dimmer();
 
   if(bit_is_clear(PINB, MANUAL_SWITCH)){
     light = ON;
