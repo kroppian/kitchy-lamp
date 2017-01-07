@@ -16,6 +16,7 @@
 
 #define MANUAL_SWITCH PINB4
 
+#define DIMMER PINB1
 
 /* Timing */
 #define RAW_TIMEOUT ((((timeout_in_secs * FREQ) / 8) / OCR2A))
@@ -53,8 +54,22 @@ int main()
   // turning the manual switch to input
   DDRB &= ~(1 << MANUAL_SWITCH);
   PORTB |= (1 << MANUAL_SWITCH);
-    
-  
+
+  // turning the dimmer pwm output on 
+  DDRB |= 1 << DIMMER;
+
+  /* Setting up PWM */
+
+  // Initialize
+  TCCR1A |= (1 << WGM11) | (1 << COM1A1) | (1<<COM1A0);
+  TCCR1B |= (1 << WGM12) | (1 << WGM13) | (1 << CS10 );
+  ICR1 =  19999;
+
+  //int offset = 18000;
+  int offset = 500;
+
+  OCR1A = ICR1 - offset;
+
   /* Set up timing*/
   sei();
 
