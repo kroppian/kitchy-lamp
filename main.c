@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include <time.h>
 #include <avr/interrupt.h>  
+#include "librot.h"
 
 /* IO macros */
 #define LED1 PIND0
@@ -122,6 +123,8 @@ void check_timeout()
 
 ISR(TIMER2_COMPA_vect)
 {
+
+  rot_poll();
 
   if(bit_is_clear(PINB, MANUAL_SWITCH)){
     light = ON;
