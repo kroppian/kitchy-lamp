@@ -14,7 +14,7 @@
 #define ROT_B PINB2
 #define ROT_BTN PINB3
 
-#define MANUAL_SWITCH PINB4
+#define MANUAL_SWITCH PINB2
 
 #define DIMMER PINB1
 
