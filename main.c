@@ -11,9 +11,9 @@
 #define LED5 PIND4
 
 #define FLOOR_SWITCH PINB0
-#define ROT_A PINB1
-#define ROT_B PINB2
-#define ROT_BTN PINB3
+#define ROT_A PINB3
+#define ROT_B PINB4
+#define ROT_BTN PINB5
 
 #define MANUAL_SWITCH PINB2
 
@@ -93,6 +93,9 @@ int main()
   counter = 0; 
   manual_mode = bit_is_clear(PINB, MANUAL_SWITCH);
 
+  /* Setting rotary encoder */
+
+  initialize_rot(PINSETB, ROT_A,PINSETB, ROT_B);
 
   /* Time to chase tails */ 
   while(1)
