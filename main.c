@@ -227,12 +227,8 @@ ISR(TIMER2_COMPA_vect)
   if(! rot_btn_pressed && pressed(0)){
 
     rot_btn_pressed = 1;
-    if(prog_mode){
-      prog_mode = 0; 
-    } else {
-      prog_mode = 1; 
-    }
-  
+    prog_mode ^= 1;
+    
   } else if(! pressed(0)) {
     rot_btn_pressed = 0; 
   }
