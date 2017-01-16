@@ -3,6 +3,11 @@
 #include <avr/interrupt.h>  
 #include "librot.h"
 
+/* Button */ 
+
+#define btn_count 1
+#include "button.h"
+
 /* IO macros */
 #define LED1 PIND0
 #define LED2 PIND1
@@ -47,7 +52,7 @@ int manual_mode;
 int is_rot; 
 int offset = 500;
 int prog_mode;
-
+int rot_btn_pressed = 0;
 
 int main()
 {
@@ -216,13 +221,20 @@ ISR(TIMER2_COMPA_vect)
 {
 
   rot_poll();
+  btn_poll(PINB, ROT_BTN, 0);
 
   // check if we're in timer program mode
-  // TODO work on debouncing
-  if(bit_is_clear(PINB, ROT_BTN) && prog_mode){
-    prog_mode = 0; 
-  }else if(bit_is_clear(PINB, ROT_BTN) && ! prog_mode){
-    prog_mode = 1; 
+  if(! rot_btn_pressed && pressed(0)){
+
+    rot_btn_pressed = 1;
+    if(prog_mode){
+      prog_mode = 0; 
+    } else {
+      prog_mode = 1; 
+    }
+  
+  } else if(! pressed(0)) {
+    rot_btn_pressed = 0; 
   }
 
   // Manual mode
